@@ -154,7 +154,7 @@ cfg_if! {
             } else {
                 (1, &sb[1..])
             };
-            if nv.len() == 0 || nv[0] == b'-' || nv[0] == b'-' {
+            if nv.len() == 0 || nv[0] == b'-' || nv[0] == b'=' {
                 return FlagResult::BadFlag;
             }
             let equal_pos = nv.iter().position(|&c| c == b'=');
@@ -188,7 +188,7 @@ cfg_if! {
             } else {
                 (1, &sb[1..])
             };
-            if nv.len() == 0 || nv[0] == b'-' as u16 || nv[0] == b'-' as u16 {
+            if nv.len() == 0 || nv[0] == b'-' as u16 || nv[0] == b'=' as u16 {
                 return FlagResult::BadFlag;
             }
             let equal_pos = nv.iter().position(|&c| c == b'=' as u16);
