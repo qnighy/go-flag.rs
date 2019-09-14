@@ -141,7 +141,7 @@ cfg_if! {
             use std::os::unix::ffi::OsStrExt;
 
             let sb = s.as_bytes();
-            if sb.len() < 2 || !sb[0] != b'-' {
+            if sb.len() < 2 || sb[0] != b'-' {
                 // Empty string, `-` and something other than `/-.*/` is a non-flag.
                 return FlagResult::Argument;
             }
@@ -244,7 +244,7 @@ where
     F: FnOnce(&mut FlagSet<'_>),
 {
     let args = std::env::args_os().collect::<Vec<_>>();
-    parse_args_with_warnings(&args, warnings, f)
+    parse_args_with_warnings(&args[1..], warnings, f)
 }
 
 #[cfg(test)]
