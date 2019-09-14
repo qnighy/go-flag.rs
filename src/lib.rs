@@ -1,7 +1,7 @@
 use cfg_if::cfg_if;
 use std::borrow::Cow;
 use std::collections::HashMap;
-use std::ffi::{OsStr, OsString};
+use std::ffi::OsStr;
 use std::fmt;
 
 pub use error::{FlagError, FlagParseError, FlagWarning};
@@ -23,34 +23,29 @@ impl<'a> FlagSet<'a> {
     }
 
     pub fn add_flag(&mut self, name: &'a str, value: &'a mut dyn FlagValue) {
-        let value = FlagSpec {
-            r: value,
-        };
+        let value = FlagSpec { r: value };
         let old = self.flag_specs.insert(name, value);
         if old.is_some() {
             panic!("multiple flags with same name: {}", name);
         }
     }
 
-    pub fn parse<'b, S: AsRef<OsStr>>(
-        &mut self,
-        args: &'b [S],
-    ) -> Result<&'b [S], FlagError> {
-        self.parse_with_warnings(args).map(|(remain, _)| remain)
+    pub fn parse<'b, S: AsRef<OsStr>>(&mut self, args: &'b [S]) -> Result<&'b [S], FlagError> {
+        self.parse_with_warnings(args, None)
     }
 
     pub fn parse_with_warnings<'b, S: AsRef<OsStr>>(
         &mut self,
         mut args: &'b [S],
-    ) -> Result<(&'b [S], Vec<FlagWarning>), FlagError> {
-        let mut warnings = Vec::new();
+        mut warnings: Option<&mut Vec<FlagWarning>>,
+    ) -> Result<&'b [S], FlagError> {
         loop {
-            let seen = self.process_one(&mut args, Some(&mut warnings))?;
+            let seen = self.process_one(&mut args, reborrow_option_mut(&mut warnings))?;
             if !seen {
                 break;
             }
         }
-        Ok((args, warnings))
+        Ok(args)
     }
 
     fn process_one<S: AsRef<OsStr>>(
@@ -200,69 +195,56 @@ impl<'a> fmt::Debug for FlagSpec<'a> {
     }
 }
 
-pub fn parse_args<S: AsRef<OsStr>, F>(
-    args: &[S],
-    f: F,
-) -> Result<Vec<OsString>, FlagError>
+pub fn parse_args<T, S: AsRef<OsStr>, F>(args: &[S], f: F) -> Result<Vec<T>, FlagError>
 where
+    T: FlagValue + Default,
     F: FnOnce(&mut FlagSet<'_>),
 {
-    parse_args_with_warnings(args, f).map(|(remain, _)| remain)
+    parse_args_with_warnings(args, None, f)
 }
 
-pub fn parse_args_with_warnings<S: AsRef<OsStr>, F>(
+pub fn parse_args_with_warnings<T, S: AsRef<OsStr>, F>(
     args: &[S],
+    mut warnings: Option<&mut Vec<FlagWarning>>,
     f: F,
-) -> Result<(Vec<OsString>, Vec<FlagWarning>), FlagError>
+) -> Result<Vec<T>, FlagError>
 where
+    T: FlagValue + Default,
     F: FnOnce(&mut FlagSet<'_>),
 {
     let mut flag_set = FlagSet::new();
     f(&mut flag_set);
-    let (remain, warnings) = flag_set.parse_with_warnings(args)?;
-    let remain = remain.iter().map(|x| x.as_ref().to_owned()).collect::<Vec<_>>();
-    Ok((remain, warnings))
+    let remain = flag_set.parse_with_warnings(args, reborrow_option_mut(&mut warnings))?;
+    let remain = remain
+        .iter()
+        .map(|x| {
+            let mut val = T::default();
+            val.set(Some(x.as_ref()), reborrow_option_mut(&mut warnings))
+                .map_err(|error| FlagError::ParseError { error })?;
+            Ok(val)
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(remain)
 }
 
-pub fn parse_os<'a, F>(
-    f: F,
-) -> Result<Vec<OsString>, FlagError>
+pub fn parse<T, F>(f: F) -> Result<Vec<T>, FlagError>
 where
+    T: FlagValue + Default,
     F: FnOnce(&mut FlagSet<'_>),
 {
-    parse_os_with_warnings(f).map(|(remain, _)| remain)
+    parse_with_warnings(None, f)
 }
 
-pub fn parse_os_with_warnings<'a, F>(
+pub fn parse_with_warnings<T, F>(
+    warnings: Option<&mut Vec<FlagWarning>>,
     f: F,
-) -> Result<(Vec<OsString>, Vec<FlagWarning>), FlagError>
+) -> Result<Vec<T>, FlagError>
 where
+    T: FlagValue + Default,
     F: FnOnce(&mut FlagSet<'_>),
 {
     let args = std::env::args_os().collect::<Vec<_>>();
-    parse_args_with_warnings(&args, f)
-}
-
-pub fn parse<'a, F>(
-    f: F,
-) -> Result<Vec<String>, FlagError>
-where
-    F: FnOnce(&mut FlagSet<'_>),
-{
-    parse_with_warnings(f).map(|(remain, _)| remain)
-}
-
-pub fn parse_with_warnings<'a, F>(
-    f: F,
-) -> Result<(Vec<String>, Vec<FlagWarning>), FlagError>
-where
-    F: FnOnce(&mut FlagSet<'_>),
-{
-    parse_os_with_warnings(f).map(|(remain, warnings)| {
-        // TODO: handle Err
-        let remain = remain.into_iter().map(|x| x.into_string().unwrap()).collect::<Vec<_>>();
-        (remain, warnings)
-    })
+    parse_args_with_warnings(&args, warnings, f)
 }
 
 #[cfg(test)]

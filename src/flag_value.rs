@@ -1,4 +1,5 @@
-use std::ffi::OsStr;
+use std::ffi::{OsStr, OsString};
+use std::path::PathBuf;
 
 use crate::error::{FlagParseError, FlagWarning};
 
@@ -11,6 +12,43 @@ pub trait FlagValue {
         value: Option<&OsStr>,
         warnings: Option<&mut Vec<FlagWarning>>,
     ) -> Result<(), FlagParseError>;
+}
+
+impl FlagValue for OsString {
+    fn set(
+        &mut self,
+        value: Option<&OsStr>,
+        _warnings: Option<&mut Vec<FlagWarning>>,
+    ) -> Result<(), FlagParseError> {
+        *self = value.unwrap().to_owned();
+        Ok(())
+    }
+}
+
+impl FlagValue for PathBuf {
+    fn set(
+        &mut self,
+        value: Option<&OsStr>,
+        _warnings: Option<&mut Vec<FlagWarning>>,
+    ) -> Result<(), FlagParseError> {
+        *self = value.unwrap().to_owned().into();
+        Ok(())
+    }
+}
+
+impl FlagValue for String {
+    fn set(
+        &mut self,
+        value: Option<&OsStr>,
+        _warnings: Option<&mut Vec<FlagWarning>>,
+    ) -> Result<(), FlagParseError> {
+        *self = value
+            .unwrap()
+            .to_str()
+            .ok_or_else(|| FlagParseError::StringParseError)?
+            .to_owned();
+        Ok(())
+    }
 }
 
 impl FlagValue for bool {
