@@ -170,9 +170,9 @@ cfg_if! {
             }
         }
     } else if #[cfg(windows)] {
-        copile_error!("TODO: implement for cfg(windows) case");
+        compile_error!("TODO: implement for cfg(windows) case");
     } else {
-        copile_error!("TODO: implement for cfg(not(any(unix, target_os = \"redox\", windows))) case");
+        compile_error!("TODO: implement for cfg(not(any(unix, target_os = \"redox\", windows))) case");
     }
 }
 
