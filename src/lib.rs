@@ -227,7 +227,7 @@ where
     Ok(remain)
 }
 
-pub fn parse<T, F>(f: F) -> Result<Vec<T>, FlagError>
+pub fn parse<T, F>(f: F) -> Vec<T>
 where
     T: FlagValue + Default,
     F: FnOnce(&mut FlagSet<'_>),
@@ -238,13 +238,19 @@ where
 pub fn parse_with_warnings<T, F>(
     warnings: Option<&mut Vec<FlagWarning>>,
     f: F,
-) -> Result<Vec<T>, FlagError>
+) -> Vec<T>
 where
     T: FlagValue + Default,
     F: FnOnce(&mut FlagSet<'_>),
 {
     let args = std::env::args_os().collect::<Vec<_>>();
-    parse_args_with_warnings(&args[1..], warnings, f)
+    match parse_args_with_warnings(&args[1..], warnings, f) {
+        Ok(x) => x,
+        Err(e) => {
+            eprintln!("{}", e);
+            std::process::exit(1);
+        }
+    }
 }
 
 #[cfg(test)]
