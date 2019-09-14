@@ -131,7 +131,7 @@ enum FlagResult<'a> {
     BadFlag,
     Flag {
         num_minuses: usize,
-        name: &'a OsStr,
+        name: Cow<'a, OsStr>,
         value: Option<Cow<'a, OsStr>>,
     },
 }
@@ -165,12 +165,44 @@ cfg_if! {
             };
             FlagResult::Flag {
                 num_minuses,
-                name: OsStr::from_bytes(name),
+                name: Cow::from(OsStr::from_bytes(name)),
                 value: value.map(|value| Cow::from(OsStr::from_bytes(value))),
             }
         }
     } else if #[cfg(windows)] {
-        compile_error!("TODO: implement for cfg(windows) case");
+        fn parse_one(s: &OsStr) -> FlagResult<'_> {
+            use std::ffi::OsString;
+            use std::os::windows::ffi::{OsStrExt, OsStringExt};
+
+            let sb = s.encode_wide().collect::<Vec<_>>();
+            if sb.len() < 2 || sb[0] != b'-' as u16 {
+                // Empty string, `-` and something other than `/-.*/` is a non-flag.
+                return FlagResult::Argument;
+            }
+            if sb == [b'-' as u16, b'-' as u16] {
+                // `--` terminates flags.
+                return FlagResult::EndFlags;
+            }
+            let (num_minuses, nv) = if sb.len() >= 2 && &sb[..2] == [b'-' as u16, b'-' as u16] {
+                (2, &sb[2..])
+            } else {
+                (1, &sb[1..])
+            };
+            if nv.len() == 0 || nv[0] == b'-' as u16 || nv[0] == b'-' as u16 {
+                return FlagResult::BadFlag;
+            }
+            let equal_pos = nv.iter().position(|&c| c == b'=' as u16);
+            let (name, value) = if let Some(equal_pos) = equal_pos {
+                (&nv[..equal_pos], Some(&nv[equal_pos + 1..]))
+            } else {
+                (nv, None)
+            };
+            FlagResult::Flag {
+                num_minuses,
+                name: Cow::from(OsString::from_wide(name)),
+                value: value.map(|value| Cow::from(OsString::from_wide(value))),
+            }
+        }
     } else {
         compile_error!("TODO: implement for cfg(not(any(unix, target_os = \"redox\", windows))) case");
     }
