@@ -79,6 +79,7 @@ impl std::error::Error for FlagWarning {
 #[derive(Debug)]
 pub enum FlagParseError {
     BoolParseError,
+    IntegerParseError,
     StringParseError,
 }
 
@@ -87,6 +88,7 @@ impl fmt::Display for FlagParseError {
         use FlagParseError::*;
         match self {
             BoolParseError => write!(f, "invalid bool"),
+            IntegerParseError => write!(f, "invalid integer"),
             StringParseError => write!(f, "invalid unicode string"),
         }
     }
@@ -97,6 +99,7 @@ impl std::error::Error for FlagParseError {
         use FlagParseError::*;
         match self {
             BoolParseError => "invalid bool",
+            IntegerParseError => "invalid integer",
             StringParseError => "invalid unicode string",
         }
     }
