@@ -216,16 +216,18 @@ mod tests {
 
         assert_eq!(bool::parse(None, None)?, true);
 
+        let parse = |s: &str| bool::parse(Some(OsStr::new(s)), None);
+
         for &s in &["0", "f", "F", "false", "FALSE", "False"] {
-            assert_eq!(bool::parse(Some(OsStr::new(s)), None)?, false);
+            assert_eq!(parse(s).unwrap(), false);
         }
 
         for &s in &["1", "t", "T", "true", "TRUE", "True"] {
-            assert_eq!(bool::parse(Some(OsStr::new(s)), None)?, true);
+            assert_eq!(parse(s).unwrap(), true);
         }
 
         for &s in &["", "00", "2", "fALSE", "tRUE", "no", "yes", "off", "on"] {
-            assert!(bool::parse(Some(OsStr::new(s)), None).is_err());
+            assert!(parse(s).is_err());
         }
 
         #[cfg(any(unix, target_os = "redox"))]
@@ -240,33 +242,31 @@ mod tests {
 
     #[test]
     fn test_parse_bool_warnings() -> Result<(), FlagParseError> {
-        let mut warnings = Vec::new();
-        assert_eq!(bool::parse(None, Some(&mut warnings))?, true);
-        assert_eq!(warnings.len(), 0);
+        let parse = || {
+            let mut warnings = Vec::new();
+            let parsed = bool::parse(None, Some(&mut warnings)).unwrap();
+            (parsed, warnings.len())
+        };
+        assert_eq!(parse(), (true, 0));
+
+        let parse = |s: &str| {
+            let mut warnings = Vec::new();
+            let parsed = bool::parse(Some(OsStr::new(s)), Some(&mut warnings)).unwrap();
+            (parsed, warnings.len())
+        };
 
         for &s in &["false"] {
-            warnings.clear();
-            assert_eq!(bool::parse(Some(OsStr::new(s)), None)?, false);
-            assert_eq!(warnings.len(), 0);
+            assert_eq!(parse(s), (false, 0));
         }
         for &s in &["0", "f", "F", "FALSE", "False"] {
-            warnings.clear();
-            assert_eq!(
-                bool::parse(Some(OsStr::new(s)), Some(&mut warnings))?,
-                false
-            );
-            assert_eq!(warnings.len(), 1);
+            assert_eq!(parse(s), (false, 1));
         }
 
         for &s in &["true"] {
-            warnings.clear();
-            assert_eq!(bool::parse(Some(OsStr::new(s)), Some(&mut warnings))?, true);
-            assert_eq!(warnings.len(), 0);
+            assert_eq!(parse(s), (true, 0));
         }
         for &s in &["1", "t", "T", "TRUE", "True"] {
-            warnings.clear();
-            assert_eq!(bool::parse(Some(OsStr::new(s)), Some(&mut warnings))?, true);
-            assert_eq!(warnings.len(), 1);
+            assert_eq!(parse(s), (true, 1));
         }
 
         Ok(())
@@ -274,209 +274,176 @@ mod tests {
 
     #[test]
     fn test_parse_integer() {
-        assert_eq!(i32::parse(Some(OsStr::new("0")), None).unwrap(), 0);
-        assert_eq!(i32::parse(Some(OsStr::new("789")), None).unwrap(), 789);
-        assert_eq!(i32::parse(Some(OsStr::new("+789")), None).unwrap(), 789);
-        assert_eq!(i32::parse(Some(OsStr::new("-789")), None).unwrap(), -789);
-        assert_eq!(
-            i32::parse(Some(OsStr::new("12_345_6789")), None).unwrap(),
-            123456789
-        );
-        assert_eq!(i32::parse(Some(OsStr::new("0xABc")), None).unwrap(), 0xABC);
-        assert_eq!(i32::parse(Some(OsStr::new("+0xABc")), None).unwrap(), 0xABC);
-        assert_eq!(
-            i32::parse(Some(OsStr::new("-0xABc")), None).unwrap(),
-            -0xABC
-        );
-        assert_eq!(
-            i32::parse(Some(OsStr::new("-0x_ABC_DEF")), None).unwrap(),
-            -0xABCDEF
-        );
-        assert_eq!(i32::parse(Some(OsStr::new("0XABc")), None).unwrap(), 0xABC);
-        assert_eq!(i32::parse(Some(OsStr::new("+0XABc")), None).unwrap(), 0xABC);
-        assert_eq!(
-            i32::parse(Some(OsStr::new("-0XABc")), None).unwrap(),
-            -0xABC
-        );
-        assert_eq!(i32::parse(Some(OsStr::new("0o567")), None).unwrap(), 0o567);
-        assert_eq!(i32::parse(Some(OsStr::new("+0o567")), None).unwrap(), 0o567);
-        assert_eq!(
-            i32::parse(Some(OsStr::new("-0o567")), None).unwrap(),
-            -0o567
-        );
-        assert_eq!(
-            i32::parse(Some(OsStr::new("+0o12_345_67")), None).unwrap(),
-            0o1234567
-        );
-        assert_eq!(i32::parse(Some(OsStr::new("0O567")), None).unwrap(), 0o567);
-        assert_eq!(i32::parse(Some(OsStr::new("+0O567")), None).unwrap(), 0o567);
-        assert_eq!(
-            i32::parse(Some(OsStr::new("-0O567")), None).unwrap(),
-            -0o567
-        );
-        assert_eq!(i32::parse(Some(OsStr::new("0b111")), None).unwrap(), 0b111);
-        assert_eq!(i32::parse(Some(OsStr::new("+0b111")), None).unwrap(), 0b111);
-        assert_eq!(
-            i32::parse(Some(OsStr::new("-0b111")), None).unwrap(),
-            -0b111
-        );
-        assert_eq!(i32::parse(Some(OsStr::new("0B111")), None).unwrap(), 0b111);
-        assert_eq!(i32::parse(Some(OsStr::new("+0B111")), None).unwrap(), 0b111);
-        assert_eq!(
-            i32::parse(Some(OsStr::new("-0B111")), None).unwrap(),
-            -0b111
-        );
-        assert_eq!(i32::parse(Some(OsStr::new("0x_ABC")), None).unwrap(), 0xABC);
-        assert_eq!(i32::parse(Some(OsStr::new("0o_567")), None).unwrap(), 0o567);
-        assert_eq!(i32::parse(Some(OsStr::new("0b_111")), None).unwrap(), 0b111);
-        assert_eq!(i32::parse(Some(OsStr::new("0_567")), None).unwrap(), 0o567);
-        assert_eq!(
-            i32::parse(Some(OsStr::new("2147483647")), None).unwrap(),
-            2147483647
-        );
-        assert_eq!(
-            i32::parse(Some(OsStr::new("-2147483648")), None).unwrap(),
-            -2147483648
-        );
-        assert_eq!(
-            i32::parse(Some(OsStr::new("0x000000007FFFFFFF")), None).unwrap(),
-            0x7FFFFFFF
-        );
-        assert_eq!(
-            i32::parse(Some(OsStr::new("-0x0000000080000000")), None).unwrap(),
-            -0x80000000
-        );
+        let parse = |s: &str| i32::parse(Some(OsStr::new(s)), None);
 
-        assert!(i32::parse(Some(OsStr::new("")), None).is_err());
-        assert!(i32::parse(Some(OsStr::new("-")), None).is_err());
-        assert!(i32::parse(Some(OsStr::new("+")), None).is_err());
-        assert!(i32::parse(Some(OsStr::new("--1")), None).is_err());
-        assert!(i32::parse(Some(OsStr::new("-+1")), None).is_err());
-        assert!(i32::parse(Some(OsStr::new("+-1")), None).is_err());
-        assert!(i32::parse(Some(OsStr::new("++1")), None).is_err());
-        assert!(i32::parse(Some(OsStr::new("ABC")), None).is_err());
-        assert!(i32::parse(Some(OsStr::new("-ABC")), None).is_err());
-        assert!(i32::parse(Some(OsStr::new("0789")), None).is_err());
-        assert!(i32::parse(Some(OsStr::new("-0789")), None).is_err());
-        assert!(i32::parse(Some(OsStr::new("0o789")), None).is_err());
-        assert!(i32::parse(Some(OsStr::new("-0o789")), None).is_err());
-        assert!(i32::parse(Some(OsStr::new("0xGHI")), None).is_err());
-        assert!(i32::parse(Some(OsStr::new("-0xGHI")), None).is_err());
-        assert!(i32::parse(Some(OsStr::new("0b222")), None).is_err());
-        assert!(i32::parse(Some(OsStr::new("-0b222")), None).is_err());
-        assert!(i32::parse(Some(OsStr::new("0-111")), None).is_err());
-        assert!(i32::parse(Some(OsStr::new("0x-111")), None).is_err());
-        assert!(i32::parse(Some(OsStr::new("0b-111")), None).is_err());
-        assert!(i32::parse(Some(OsStr::new("0o-111")), None).is_err());
-        assert!(i32::parse(Some(OsStr::new("0+111")), None).is_err());
-        assert!(i32::parse(Some(OsStr::new("0x+111")), None).is_err());
-        assert!(i32::parse(Some(OsStr::new("0b+111")), None).is_err());
-        assert!(i32::parse(Some(OsStr::new("0o+111")), None).is_err());
-        assert!(i32::parse(Some(OsStr::new("_")), None).is_err());
-        assert!(i32::parse(Some(OsStr::new("0_")), None).is_err());
-        assert!(i32::parse(Some(OsStr::new("0x_")), None).is_err());
-        assert!(i32::parse(Some(OsStr::new("_1")), None).is_err());
-        assert!(i32::parse(Some(OsStr::new("_01")), None).is_err());
-        assert!(i32::parse(Some(OsStr::new("1_")), None).is_err());
-        assert!(i32::parse(Some(OsStr::new("0x1_")), None).is_err());
-        assert!(i32::parse(Some(OsStr::new("1__2")), None).is_err());
-        assert!(i32::parse(Some(OsStr::new("0x1__2")), None).is_err());
-        assert!(i32::parse(Some(OsStr::new("0x__1")), None).is_err());
-        assert!(i32::parse(Some(OsStr::new("2147483648")), None).is_err());
-        assert!(i32::parse(Some(OsStr::new("-2147483649")), None).is_err());
+        assert_eq!(parse("0").unwrap(), 0);
+        assert_eq!(parse("789").unwrap(), 789);
+        assert_eq!(parse("+789").unwrap(), 789);
+        assert_eq!(parse("-789").unwrap(), -789);
+        assert_eq!(parse("12_345_6789").unwrap(), 123456789);
+        assert_eq!(parse("0xABc").unwrap(), 0xABC);
+        assert_eq!(parse("+0xABc").unwrap(), 0xABC);
+        assert_eq!(parse("-0xABc").unwrap(), -0xABC);
+        assert_eq!(parse("-0x_ABC_DEF").unwrap(), -0xABCDEF);
+        assert_eq!(parse("0XABc").unwrap(), 0xABC);
+        assert_eq!(parse("+0XABc").unwrap(), 0xABC);
+        assert_eq!(parse("-0XABc").unwrap(), -0xABC);
+        assert_eq!(parse("0o567").unwrap(), 0o567);
+        assert_eq!(parse("+0o567").unwrap(), 0o567);
+        assert_eq!(parse("-0o567").unwrap(), -0o567);
+        assert_eq!(parse("+0o12_345_67").unwrap(), 0o1234567);
+        assert_eq!(parse("0O567").unwrap(), 0o567);
+        assert_eq!(parse("+0O567").unwrap(), 0o567);
+        assert_eq!(parse("-0O567").unwrap(), -0o567);
+        assert_eq!(parse("0b111").unwrap(), 0b111);
+        assert_eq!(parse("+0b111").unwrap(), 0b111);
+        assert_eq!(parse("-0b111").unwrap(), -0b111);
+        assert_eq!(parse("0B111").unwrap(), 0b111);
+        assert_eq!(parse("+0B111").unwrap(), 0b111);
+        assert_eq!(parse("-0B111").unwrap(), -0b111);
+        assert_eq!(parse("0x_ABC").unwrap(), 0xABC);
+        assert_eq!(parse("0o_567").unwrap(), 0o567);
+        assert_eq!(parse("0b_111").unwrap(), 0b111);
+        assert_eq!(parse("0_567").unwrap(), 0o567);
+        assert_eq!(parse("2147483647").unwrap(), 2147483647);
+        assert_eq!(parse("-2147483648").unwrap(), -2147483648);
+        assert_eq!(parse("0x000000007FFFFFFF").unwrap(), 0x7FFFFFFF);
+        assert_eq!(parse("-0x0000000080000000").unwrap(), -0x80000000);
+
+        assert!(parse("").is_err());
+        assert!(parse("-").is_err());
+        assert!(parse("+").is_err());
+        assert!(parse("--1").is_err());
+        assert!(parse("-+1").is_err());
+        assert!(parse("+-1").is_err());
+        assert!(parse("++1").is_err());
+        assert!(parse("ABC").is_err());
+        assert!(parse("-ABC").is_err());
+        assert!(parse("0789").is_err());
+        assert!(parse("-0789").is_err());
+        assert!(parse("0o789").is_err());
+        assert!(parse("-0o789").is_err());
+        assert!(parse("0xGHI").is_err());
+        assert!(parse("-0xGHI").is_err());
+        assert!(parse("0b222").is_err());
+        assert!(parse("-0b222").is_err());
+        assert!(parse("0-111").is_err());
+        assert!(parse("0x-111").is_err());
+        assert!(parse("0b-111").is_err());
+        assert!(parse("0o-111").is_err());
+        assert!(parse("0+111").is_err());
+        assert!(parse("0x+111").is_err());
+        assert!(parse("0b+111").is_err());
+        assert!(parse("0o+111").is_err());
+        assert!(parse("_").is_err());
+        assert!(parse("0_").is_err());
+        assert!(parse("0x_").is_err());
+        assert!(parse("_1").is_err());
+        assert!(parse("_01").is_err());
+        assert!(parse("1_").is_err());
+        assert!(parse("0x1_").is_err());
+        assert!(parse("1__2").is_err());
+        assert!(parse("0x1__2").is_err());
+        assert!(parse("0x__1").is_err());
+        assert!(parse("2147483648").is_err());
+        assert!(parse("-2147483649").is_err());
 
         #[cfg(any(unix, target_os = "redox"))]
         {
             use std::os::unix::ffi::OsStrExt;
-            assert!(i32::parse(Some(OsStr::from_bytes(b"\xA0")), None).is_err());
+            let parse = |s: &[u8]| i32::parse(Some(OsStr::from_bytes(s)), None);
+            assert!(parse(b"\xA0").is_err());
         }
     }
 
     #[test]
     fn test_parse_integer_unsigned() {
-        assert_eq!(u32::parse(Some(OsStr::new("0")), None).unwrap(), 0);
-        assert_eq!(u32::parse(Some(OsStr::new("789")), None).unwrap(), 789);
+        let parse = |s: &str| u32::parse(Some(OsStr::new(s)), None);
+
+        assert_eq!(parse("0").unwrap(), 0);
+        assert_eq!(parse("789").unwrap(), 789);
         assert_eq!(
-            u32::parse(Some(OsStr::new("12_345_6789")), None).unwrap(),
+            parse("12_345_6789").unwrap(),
             123456789
         );
-        assert_eq!(u32::parse(Some(OsStr::new("0xABc")), None).unwrap(), 0xABC);
-        assert_eq!(u32::parse(Some(OsStr::new("0XABc")), None).unwrap(), 0xABC);
-        assert_eq!(u32::parse(Some(OsStr::new("0o567")), None).unwrap(), 0o567);
-        assert_eq!(u32::parse(Some(OsStr::new("0O567")), None).unwrap(), 0o567);
-        assert_eq!(u32::parse(Some(OsStr::new("0b111")), None).unwrap(), 0b111);
-        assert_eq!(u32::parse(Some(OsStr::new("0B111")), None).unwrap(), 0b111);
-        assert_eq!(u32::parse(Some(OsStr::new("0x_ABC")), None).unwrap(), 0xABC);
-        assert_eq!(u32::parse(Some(OsStr::new("0o_567")), None).unwrap(), 0o567);
-        assert_eq!(u32::parse(Some(OsStr::new("0b_111")), None).unwrap(), 0b111);
-        assert_eq!(u32::parse(Some(OsStr::new("0_567")), None).unwrap(), 0o567);
+        assert_eq!(parse("0xABc").unwrap(), 0xABC);
+        assert_eq!(parse("0XABc").unwrap(), 0xABC);
+        assert_eq!(parse("0o567").unwrap(), 0o567);
+        assert_eq!(parse("0O567").unwrap(), 0o567);
+        assert_eq!(parse("0b111").unwrap(), 0b111);
+        assert_eq!(parse("0B111").unwrap(), 0b111);
+        assert_eq!(parse("0x_ABC").unwrap(), 0xABC);
+        assert_eq!(parse("0o_567").unwrap(), 0o567);
+        assert_eq!(parse("0b_111").unwrap(), 0b111);
+        assert_eq!(parse("0_567").unwrap(), 0o567);
         assert_eq!(
-            u32::parse(Some(OsStr::new("4294967295")), None).unwrap(),
+            parse("4294967295").unwrap(),
             4294967295
         );
         assert_eq!(
-            u32::parse(Some(OsStr::new("0x00000000FFFFFFFF")), None).unwrap(),
+            parse("0x00000000FFFFFFFF").unwrap(),
             0xFFFFFFFF
         );
 
-        assert!(u32::parse(Some(OsStr::new("")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("-")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("+")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("--1")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("-+1")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("+-1")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("++1")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("ABC")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("-ABC")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("0789")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("-0789")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("0o789")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("-0o789")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("0xGHI")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("-0xGHI")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("0b222")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("-0b222")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("0-111")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("0x-111")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("0b-111")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("0o-111")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("0+111")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("0x+111")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("0b+111")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("0o+111")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("_")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("0_")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("0x_")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("_1")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("_01")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("1_")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("0x1_")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("1__2")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("0x1__2")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("0x__1")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("4294967296")), None).is_err());
+        assert!(parse("").is_err());
+        assert!(parse("-").is_err());
+        assert!(parse("+").is_err());
+        assert!(parse("--1").is_err());
+        assert!(parse("-+1").is_err());
+        assert!(parse("+-1").is_err());
+        assert!(parse("++1").is_err());
+        assert!(parse("ABC").is_err());
+        assert!(parse("-ABC").is_err());
+        assert!(parse("0789").is_err());
+        assert!(parse("-0789").is_err());
+        assert!(parse("0o789").is_err());
+        assert!(parse("-0o789").is_err());
+        assert!(parse("0xGHI").is_err());
+        assert!(parse("-0xGHI").is_err());
+        assert!(parse("0b222").is_err());
+        assert!(parse("-0b222").is_err());
+        assert!(parse("0-111").is_err());
+        assert!(parse("0x-111").is_err());
+        assert!(parse("0b-111").is_err());
+        assert!(parse("0o-111").is_err());
+        assert!(parse("0+111").is_err());
+        assert!(parse("0x+111").is_err());
+        assert!(parse("0b+111").is_err());
+        assert!(parse("0o+111").is_err());
+        assert!(parse("_").is_err());
+        assert!(parse("0_").is_err());
+        assert!(parse("0x_").is_err());
+        assert!(parse("_1").is_err());
+        assert!(parse("_01").is_err());
+        assert!(parse("1_").is_err());
+        assert!(parse("0x1_").is_err());
+        assert!(parse("1__2").is_err());
+        assert!(parse("0x1__2").is_err());
+        assert!(parse("0x__1").is_err());
+        assert!(parse("4294967296").is_err());
 
-        assert!(u32::parse(Some(OsStr::new("+789")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("-789")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("+0xABc")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("-0xABc")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("-0x_ABC_DEF")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("+0XABc")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("-0XABc")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("+0o567")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("-0o567")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("+0o12_345_67")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("+0O567")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("-0O567")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("+0b111")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("-0b111")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("+0B111")), None).is_err());
-        assert!(u32::parse(Some(OsStr::new("-0B111")), None).is_err());
+        assert!(parse("+789").is_err());
+        assert!(parse("-789").is_err());
+        assert!(parse("+0xABc").is_err());
+        assert!(parse("-0xABc").is_err());
+        assert!(parse("-0x_ABC_DEF").is_err());
+        assert!(parse("+0XABc").is_err());
+        assert!(parse("-0XABc").is_err());
+        assert!(parse("+0o567").is_err());
+        assert!(parse("-0o567").is_err());
+        assert!(parse("+0o12_345_67").is_err());
+        assert!(parse("+0O567").is_err());
+        assert!(parse("-0O567").is_err());
+        assert!(parse("+0b111").is_err());
+        assert!(parse("-0b111").is_err());
+        assert!(parse("+0B111").is_err());
+        assert!(parse("-0B111").is_err());
 
         #[cfg(any(unix, target_os = "redox"))]
         {
             use std::os::unix::ffi::OsStrExt;
-            assert!(u32::parse(Some(OsStr::from_bytes(b"\xA0")), None).is_err());
+            let parse = |s: &[u8]| u32::parse(Some(OsStr::from_bytes(s)), None);
+            assert!(parse(b"\xA0").is_err());
         }
     }
 }
