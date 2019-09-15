@@ -301,22 +301,44 @@ where
     T: FlagValue + Default,
     F: FnOnce(&mut FlagSet<'_>),
 {
-    parse_with_warnings(None, f)
+    parse_with_warnings(WarningMode::Report, f)
 }
 
-pub fn parse_with_warnings<T, F>(warnings: Option<&mut Vec<FlagWarning>>, f: F) -> Vec<T>
+pub fn parse_with_warnings<T, F>(mode: WarningMode, f: F) -> Vec<T>
 where
     T: FlagValue + Default,
     F: FnOnce(&mut FlagSet<'_>),
 {
+    let mut warnings = if mode == WarningMode::Ignore {
+        None
+    } else {
+        Some(Vec::new())
+    };
     let args = std::env::args_os().collect::<Vec<_>>();
-    match parse_args_with_warnings(&args[1..], warnings, f) {
-        Ok(x) => x,
+    match parse_args_with_warnings(&args[1..], warnings.as_mut(), f) {
+        Ok(x) => {
+            if let Some(warnings) = &warnings {
+                for w in warnings {
+                    eprintln!("{}", w);
+                }
+                if !warnings.is_empty() && mode == WarningMode::Error {
+                    std::process::exit(1);
+                }
+            }
+            x
+        }
         Err(e) => {
             eprintln!("{}", e);
             std::process::exit(1);
         }
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum WarningMode {
+    Ignore,
+    Report,
+    Error,
 }
 
 #[cfg(test)]
