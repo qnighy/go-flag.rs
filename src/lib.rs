@@ -264,22 +264,22 @@ impl<'a> fmt::Debug for FlagSpec<'a> {
     }
 }
 
-pub fn parse_args<T, S: AsRef<OsStr>, F>(args: &[S], f: F) -> Result<Vec<T>, FlagError>
+pub fn parse_args<'a, T, S: AsRef<OsStr>, F>(args: &[S], f: F) -> Result<Vec<T>, FlagError>
 where
     T: FlagValue + Default,
-    F: FnOnce(&mut FlagSet<'_>),
+    F: FnOnce(&mut FlagSet<'a>),
 {
     parse_args_with_warnings(args, None, f)
 }
 
-pub fn parse_args_with_warnings<T, S: AsRef<OsStr>, F>(
+pub fn parse_args_with_warnings<'a, T, S: AsRef<OsStr>, F>(
     args: &[S],
     mut warnings: Option<&mut Vec<FlagWarning>>,
     f: F,
 ) -> Result<Vec<T>, FlagError>
 where
     T: FlagValue + Default,
-    F: FnOnce(&mut FlagSet<'_>),
+    F: FnOnce(&mut FlagSet<'a>),
 {
     let mut flag_set = FlagSet::new();
     f(&mut flag_set);
@@ -296,18 +296,18 @@ where
     Ok(remain)
 }
 
-pub fn parse<T, F>(f: F) -> Vec<T>
+pub fn parse<'a, T, F>(f: F) -> Vec<T>
 where
     T: FlagValue + Default,
-    F: FnOnce(&mut FlagSet<'_>),
+    F: FnOnce(&mut FlagSet<'a>),
 {
     parse_with_warnings(WarningMode::Report, f)
 }
 
-pub fn parse_with_warnings<T, F>(mode: WarningMode, f: F) -> Vec<T>
+pub fn parse_with_warnings<'a, T, F>(mode: WarningMode, f: F) -> Vec<T>
 where
     T: FlagValue + Default,
-    F: FnOnce(&mut FlagSet<'_>),
+    F: FnOnce(&mut FlagSet<'a>),
 {
     let mut warnings = if mode == WarningMode::Ignore {
         None
