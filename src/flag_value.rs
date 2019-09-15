@@ -454,7 +454,7 @@ mod tests {
         assert!(u32::parse(Some(OsStr::new("1__2")), None).is_err());
         assert!(u32::parse(Some(OsStr::new("0x1__2")), None).is_err());
         assert!(u32::parse(Some(OsStr::new("0x__1")), None).is_err());
-        assert!(i32::parse(Some(OsStr::new("4294967296")), None).is_err());
+        assert!(u32::parse(Some(OsStr::new("4294967296")), None).is_err());
 
         assert!(u32::parse(Some(OsStr::new("+789")), None).is_err());
         assert!(u32::parse(Some(OsStr::new("-789")), None).is_err());
