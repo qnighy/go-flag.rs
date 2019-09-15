@@ -40,6 +40,19 @@ fn test_noflags() -> io::Result<()> {
     Ok(())
 }
 
+#[test]
+fn test_someflags() -> io::Result<()> {
+    let commands = compile_commands("someflags")?;
+
+    for command in &commands {
+        let output = Command::new(command).output()?;
+        assert!(output.status.success());
+        assert_eq!(output.stdout, b"force = false\nlines = 10\n");
+    }
+
+    Ok(())
+}
+
 fn compile_commands(name: &str) -> io::Result<[String; 2]> {
     let go_cmdname = format!("examples/{}-go", name);
     let output = Command::new("go")
