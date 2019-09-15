@@ -47,6 +47,7 @@ pub enum FlagWarning {
     FlagAfterArg { flag: String },
     ShortLong { flag: String },
     LongShort { flag: String },
+    FlagValue { value: String },
 }
 
 impl fmt::Display for FlagWarning {
@@ -58,6 +59,7 @@ impl fmt::Display for FlagWarning {
             }
             ShortLong { flag } => write!(f, "long flag with single minus: {}", flag),
             LongShort { flag } => write!(f, "short flag with double minuses: {}", flag),
+            FlagValue { value } => write!(f, "nonstandard value format: {}", value),
         }
     }
 }
@@ -69,6 +71,7 @@ impl std::error::Error for FlagWarning {
             FlagAfterArg { .. } => "flag-like syntax appearing after argument",
             ShortLong { .. } => "long flag with single minus",
             LongShort { .. } => "short flag with double minuses",
+            FlagValue { .. } => "nonstandard value format: {}",
         }
     }
 }

@@ -74,7 +74,7 @@ impl FlagValue for bool {
     }
     fn parse(
         value: Option<&OsStr>,
-        _warnings: Option<&mut Vec<FlagWarning>>,
+        warnings: Option<&mut Vec<FlagWarning>>,
     ) -> Result<Self, FlagParseError> {
         let value = if let Some(value) = value {
             value
@@ -85,8 +85,24 @@ impl FlagValue for bool {
             .to_str()
             .ok_or_else(|| FlagParseError::BoolParseError)?;
         Ok(match value {
-            "1" | "t" | "T" | "true" | "TRUE" | "True" => true,
-            "0" | "f" | "F" | "false" | "FALSE" | "False" => false,
+            "true" => true,
+            "false" => false,
+            "1" | "t" | "T" | "TRUE" | "True" => {
+                if let Some(warnings) = warnings {
+                    warnings.push(FlagWarning::FlagValue {
+                        value: value.to_owned(),
+                    });
+                }
+                true
+            }
+            "0" | "f" | "F" | "FALSE" | "False" => {
+                if let Some(warnings) = warnings {
+                    warnings.push(FlagWarning::FlagValue {
+                        value: value.to_owned(),
+                    });
+                }
+                false
+            }
             _ => return Err(FlagParseError::BoolParseError),
         })
     }
@@ -119,6 +135,40 @@ mod tests {
             use std::os::unix::ffi::OsStrExt;
 
             assert!(bool::parse(Some(OsStr::from_bytes(s)), None).is_err());
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_parse_bool_warnings() -> Result<(), FlagParseError> {
+        let mut warnings = Vec::new();
+        assert_eq!(bool::parse(None, Some(&mut warnings))?, true);
+        assert_eq!(warnings.len(), 0);
+
+        for &s in &["false"] {
+            warnings.clear();
+            assert_eq!(bool::parse(Some(OsStr::new(s)), None)?, false);
+            assert_eq!(warnings.len(), 0);
+        }
+        for &s in &["0", "f", "F", "FALSE", "False"] {
+            warnings.clear();
+            assert_eq!(
+                bool::parse(Some(OsStr::new(s)), Some(&mut warnings))?,
+                false
+            );
+            assert_eq!(warnings.len(), 1);
+        }
+
+        for &s in &["true"] {
+            warnings.clear();
+            assert_eq!(bool::parse(Some(OsStr::new(s)), Some(&mut warnings))?, true);
+            assert_eq!(warnings.len(), 0);
+        }
+        for &s in &["1", "t", "T", "TRUE", "True"] {
+            warnings.clear();
+            assert_eq!(bool::parse(Some(OsStr::new(s)), Some(&mut warnings))?, true);
+            assert_eq!(warnings.len(), 1);
         }
 
         Ok(())
