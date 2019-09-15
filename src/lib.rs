@@ -74,6 +74,7 @@ impl<'a> FlagSet<'a> {
                 value,
             } => (num_minuses, name, value),
         };
+        *args = &args[1..];
         if let Some(warnings) = reborrow_option_mut(&mut warnings) {
             if name.len() > 1 && num_minuses == 1 {
                 warnings.push(FlagWarning::ShortLong {
@@ -344,6 +345,21 @@ pub enum WarningMode {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_parse_args() {
+        let parse = |args: &[&str]| -> Result<(bool, i32, Vec<String>), FlagError> {
+            let mut force = false;
+            let mut lines = 10_i32;
+            let args = parse_args(args, |flags| {
+                flags.add_flag("f", &mut force);
+                flags.add_flag("lines", &mut lines);
+            })?;
+            Ok((force, lines, args))
+        };
+        assert_eq!(parse(&[]).unwrap(), (false, 10, vec![]));
+        assert_eq!(parse(&["-f"]).unwrap(), (true, 10, vec![]));
+    }
 
     #[test]
     fn test_parse_one() {
