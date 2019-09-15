@@ -304,10 +304,7 @@ where
     parse_with_warnings(None, f)
 }
 
-pub fn parse_with_warnings<T, F>(
-    warnings: Option<&mut Vec<FlagWarning>>,
-    f: F,
-) -> Vec<T>
+pub fn parse_with_warnings<T, F>(warnings: Option<&mut Vec<FlagWarning>>, f: F) -> Vec<T>
 where
     T: FlagValue + Default,
     F: FnOnce(&mut FlagSet<'_>),
@@ -339,72 +336,108 @@ mod tests {
         assert_eq!(parse_one("z-y=x".as_ref()), FlagResult::Argument);
 
         assert_eq!(parse_one("-".as_ref()), FlagResult::Argument);
-        assert_eq!(parse_one("-z".as_ref()), FlagResult::Flag {
-            num_minuses: 1,
-            name: Cow::from(OsStr::new("z")),
-            value: None,
-        });
-        assert_eq!(parse_one("-z-y".as_ref()), FlagResult::Flag {
-            num_minuses: 1,
-            name: Cow::from(OsStr::new("z-y")),
-            value: None,
-        });
+        assert_eq!(
+            parse_one("-z".as_ref()),
+            FlagResult::Flag {
+                num_minuses: 1,
+                name: Cow::from(OsStr::new("z")),
+                value: None,
+            }
+        );
+        assert_eq!(
+            parse_one("-z-y".as_ref()),
+            FlagResult::Flag {
+                num_minuses: 1,
+                name: Cow::from(OsStr::new("z-y")),
+                value: None,
+            }
+        );
         assert_eq!(parse_one("-=".as_ref()), FlagResult::BadFlag);
         assert_eq!(parse_one("-=x".as_ref()), FlagResult::BadFlag);
-        assert_eq!(parse_one("-z=".as_ref()), FlagResult::Flag {
-            num_minuses: 1,
-            name: Cow::from(OsStr::new("z")),
-            value: Some(Cow::from(OsStr::new("")))
-        });
-        assert_eq!(parse_one("-z=x".as_ref()), FlagResult::Flag {
-            num_minuses: 1,
-            name: Cow::from(OsStr::new("z")),
-            value: Some(Cow::from(OsStr::new("x")))
-        });
-        assert_eq!(parse_one("-z-y=".as_ref()), FlagResult::Flag {
-            num_minuses: 1,
-            name: Cow::from(OsStr::new("z-y")),
-            value: Some(Cow::from(OsStr::new("")))
-        });
-        assert_eq!(parse_one("-z-y=x".as_ref()), FlagResult::Flag {
-            num_minuses: 1,
-            name: Cow::from(OsStr::new("z-y")),
-            value: Some(Cow::from(OsStr::new("x")))
-        });
+        assert_eq!(
+            parse_one("-z=".as_ref()),
+            FlagResult::Flag {
+                num_minuses: 1,
+                name: Cow::from(OsStr::new("z")),
+                value: Some(Cow::from(OsStr::new("")))
+            }
+        );
+        assert_eq!(
+            parse_one("-z=x".as_ref()),
+            FlagResult::Flag {
+                num_minuses: 1,
+                name: Cow::from(OsStr::new("z")),
+                value: Some(Cow::from(OsStr::new("x")))
+            }
+        );
+        assert_eq!(
+            parse_one("-z-y=".as_ref()),
+            FlagResult::Flag {
+                num_minuses: 1,
+                name: Cow::from(OsStr::new("z-y")),
+                value: Some(Cow::from(OsStr::new("")))
+            }
+        );
+        assert_eq!(
+            parse_one("-z-y=x".as_ref()),
+            FlagResult::Flag {
+                num_minuses: 1,
+                name: Cow::from(OsStr::new("z-y")),
+                value: Some(Cow::from(OsStr::new("x")))
+            }
+        );
 
         assert_eq!(parse_one("--".as_ref()), FlagResult::EndFlags);
-        assert_eq!(parse_one("--z".as_ref()), FlagResult::Flag {
-            num_minuses: 2,
-            name: Cow::from(OsStr::new("z")),
-            value: None,
-        });
-        assert_eq!(parse_one("--z-y".as_ref()), FlagResult::Flag {
-            num_minuses: 2,
-            name: Cow::from(OsStr::new("z-y")),
-            value: None,
-        });
+        assert_eq!(
+            parse_one("--z".as_ref()),
+            FlagResult::Flag {
+                num_minuses: 2,
+                name: Cow::from(OsStr::new("z")),
+                value: None,
+            }
+        );
+        assert_eq!(
+            parse_one("--z-y".as_ref()),
+            FlagResult::Flag {
+                num_minuses: 2,
+                name: Cow::from(OsStr::new("z-y")),
+                value: None,
+            }
+        );
         assert_eq!(parse_one("--=".as_ref()), FlagResult::BadFlag);
         assert_eq!(parse_one("--=x".as_ref()), FlagResult::BadFlag);
-        assert_eq!(parse_one("--z=".as_ref()), FlagResult::Flag {
-            num_minuses: 2,
-            name: Cow::from(OsStr::new("z")),
-            value: Some(Cow::from(OsStr::new("")))
-        });
-        assert_eq!(parse_one("--z=x".as_ref()), FlagResult::Flag {
-            num_minuses: 2,
-            name: Cow::from(OsStr::new("z")),
-            value: Some(Cow::from(OsStr::new("x")))
-        });
-        assert_eq!(parse_one("--z-y=".as_ref()), FlagResult::Flag {
-            num_minuses: 2,
-            name: Cow::from(OsStr::new("z-y")),
-            value: Some(Cow::from(OsStr::new("")))
-        });
-        assert_eq!(parse_one("--z-y=x".as_ref()), FlagResult::Flag {
-            num_minuses: 2,
-            name: Cow::from(OsStr::new("z-y")),
-            value: Some(Cow::from(OsStr::new("x")))
-        });
+        assert_eq!(
+            parse_one("--z=".as_ref()),
+            FlagResult::Flag {
+                num_minuses: 2,
+                name: Cow::from(OsStr::new("z")),
+                value: Some(Cow::from(OsStr::new("")))
+            }
+        );
+        assert_eq!(
+            parse_one("--z=x".as_ref()),
+            FlagResult::Flag {
+                num_minuses: 2,
+                name: Cow::from(OsStr::new("z")),
+                value: Some(Cow::from(OsStr::new("x")))
+            }
+        );
+        assert_eq!(
+            parse_one("--z-y=".as_ref()),
+            FlagResult::Flag {
+                num_minuses: 2,
+                name: Cow::from(OsStr::new("z-y")),
+                value: Some(Cow::from(OsStr::new("")))
+            }
+        );
+        assert_eq!(
+            parse_one("--z-y=x".as_ref()),
+            FlagResult::Flag {
+                num_minuses: 2,
+                name: Cow::from(OsStr::new("z-y")),
+                value: Some(Cow::from(OsStr::new("x")))
+            }
+        );
 
         assert_eq!(parse_one("---".as_ref()), FlagResult::BadFlag);
         assert_eq!(parse_one("---z".as_ref()), FlagResult::BadFlag);
@@ -433,72 +466,108 @@ mod tests {
         assert_eq!(parse_one("z-y=x".as_ref()), FlagResult::Argument);
 
         assert_eq!(parse_one("-".as_ref()), FlagResult::Argument);
-        assert_eq!(parse_one("-z".as_ref()), FlagResult::Flag {
-            num_minuses: 1,
-            name: Cow::from(OsStr::new("z")),
-            value: None,
-        });
-        assert_eq!(parse_one("-z-y".as_ref()), FlagResult::Flag {
-            num_minuses: 1,
-            name: Cow::from(OsStr::new("z-y")),
-            value: None,
-        });
+        assert_eq!(
+            parse_one("-z".as_ref()),
+            FlagResult::Flag {
+                num_minuses: 1,
+                name: Cow::from(OsStr::new("z")),
+                value: None,
+            }
+        );
+        assert_eq!(
+            parse_one("-z-y".as_ref()),
+            FlagResult::Flag {
+                num_minuses: 1,
+                name: Cow::from(OsStr::new("z-y")),
+                value: None,
+            }
+        );
         assert_eq!(parse_one("-=".as_ref()), FlagResult::BadFlag);
         assert_eq!(parse_one("-=x".as_ref()), FlagResult::BadFlag);
-        assert_eq!(parse_one("-z=".as_ref()), FlagResult::Flag {
-            num_minuses: 1,
-            name: Cow::from(OsStr::new("z")),
-            value: Some(Cow::from(OsStr::new("")))
-        });
-        assert_eq!(parse_one("-z=x".as_ref()), FlagResult::Flag {
-            num_minuses: 1,
-            name: Cow::from(OsStr::new("z")),
-            value: Some(Cow::from(OsStr::new("x")))
-        });
-        assert_eq!(parse_one("-z-y=".as_ref()), FlagResult::Flag {
-            num_minuses: 1,
-            name: Cow::from(OsStr::new("z-y")),
-            value: Some(Cow::from(OsStr::new("")))
-        });
-        assert_eq!(parse_one("-z-y=x".as_ref()), FlagResult::Flag {
-            num_minuses: 1,
-            name: Cow::from(OsStr::new("z-y")),
-            value: Some(Cow::from(OsStr::new("x")))
-        });
+        assert_eq!(
+            parse_one("-z=".as_ref()),
+            FlagResult::Flag {
+                num_minuses: 1,
+                name: Cow::from(OsStr::new("z")),
+                value: Some(Cow::from(OsStr::new("")))
+            }
+        );
+        assert_eq!(
+            parse_one("-z=x".as_ref()),
+            FlagResult::Flag {
+                num_minuses: 1,
+                name: Cow::from(OsStr::new("z")),
+                value: Some(Cow::from(OsStr::new("x")))
+            }
+        );
+        assert_eq!(
+            parse_one("-z-y=".as_ref()),
+            FlagResult::Flag {
+                num_minuses: 1,
+                name: Cow::from(OsStr::new("z-y")),
+                value: Some(Cow::from(OsStr::new("")))
+            }
+        );
+        assert_eq!(
+            parse_one("-z-y=x".as_ref()),
+            FlagResult::Flag {
+                num_minuses: 1,
+                name: Cow::from(OsStr::new("z-y")),
+                value: Some(Cow::from(OsStr::new("x")))
+            }
+        );
 
         assert_eq!(parse_one("--".as_ref()), FlagResult::EndFlags);
-        assert_eq!(parse_one("--z".as_ref()), FlagResult::Flag {
-            num_minuses: 2,
-            name: Cow::from(OsStr::new("z")),
-            value: None,
-        });
-        assert_eq!(parse_one("--z-y".as_ref()), FlagResult::Flag {
-            num_minuses: 2,
-            name: Cow::from(OsStr::new("z-y")),
-            value: None,
-        });
+        assert_eq!(
+            parse_one("--z".as_ref()),
+            FlagResult::Flag {
+                num_minuses: 2,
+                name: Cow::from(OsStr::new("z")),
+                value: None,
+            }
+        );
+        assert_eq!(
+            parse_one("--z-y".as_ref()),
+            FlagResult::Flag {
+                num_minuses: 2,
+                name: Cow::from(OsStr::new("z-y")),
+                value: None,
+            }
+        );
         assert_eq!(parse_one("--=".as_ref()), FlagResult::BadFlag);
         assert_eq!(parse_one("--=x".as_ref()), FlagResult::BadFlag);
-        assert_eq!(parse_one("--z=".as_ref()), FlagResult::Flag {
-            num_minuses: 2,
-            name: Cow::from(OsStr::new("z")),
-            value: Some(Cow::from(OsStr::new("")))
-        });
-        assert_eq!(parse_one("--z=x".as_ref()), FlagResult::Flag {
-            num_minuses: 2,
-            name: Cow::from(OsStr::new("z")),
-            value: Some(Cow::from(OsStr::new("x")))
-        });
-        assert_eq!(parse_one("--z-y=".as_ref()), FlagResult::Flag {
-            num_minuses: 2,
-            name: Cow::from(OsStr::new("z-y")),
-            value: Some(Cow::from(OsStr::new("")))
-        });
-        assert_eq!(parse_one("--z-y=x".as_ref()), FlagResult::Flag {
-            num_minuses: 2,
-            name: Cow::from(OsStr::new("z-y")),
-            value: Some(Cow::from(OsStr::new("x")))
-        });
+        assert_eq!(
+            parse_one("--z=".as_ref()),
+            FlagResult::Flag {
+                num_minuses: 2,
+                name: Cow::from(OsStr::new("z")),
+                value: Some(Cow::from(OsStr::new("")))
+            }
+        );
+        assert_eq!(
+            parse_one("--z=x".as_ref()),
+            FlagResult::Flag {
+                num_minuses: 2,
+                name: Cow::from(OsStr::new("z")),
+                value: Some(Cow::from(OsStr::new("x")))
+            }
+        );
+        assert_eq!(
+            parse_one("--z-y=".as_ref()),
+            FlagResult::Flag {
+                num_minuses: 2,
+                name: Cow::from(OsStr::new("z-y")),
+                value: Some(Cow::from(OsStr::new("")))
+            }
+        );
+        assert_eq!(
+            parse_one("--z-y=x".as_ref()),
+            FlagResult::Flag {
+                num_minuses: 2,
+                name: Cow::from(OsStr::new("z-y")),
+                value: Some(Cow::from(OsStr::new("x")))
+            }
+        );
 
         assert_eq!(parse_one("---".as_ref()), FlagResult::BadFlag);
         assert_eq!(parse_one("---z".as_ref()), FlagResult::BadFlag);
@@ -518,90 +587,171 @@ mod tests {
 
         assert_eq!(parse_one(OsStr::from_bytes(b"")), FlagResult::Argument);
         assert_eq!(parse_one(OsStr::from_bytes(b"z\xA0")), FlagResult::Argument);
-        assert_eq!(parse_one(OsStr::from_bytes(b"z\xA0-y\xB0")), FlagResult::Argument);
+        assert_eq!(
+            parse_one(OsStr::from_bytes(b"z\xA0-y\xB0")),
+            FlagResult::Argument
+        );
         assert_eq!(parse_one(OsStr::from_bytes(b"=")), FlagResult::Argument);
-        assert_eq!(parse_one(OsStr::from_bytes(b"=x\xC0")), FlagResult::Argument);
-        assert_eq!(parse_one(OsStr::from_bytes(b"z\xA0=")), FlagResult::Argument);
-        assert_eq!(parse_one(OsStr::from_bytes(b"z\xA0=x\xC0")), FlagResult::Argument);
-        assert_eq!(parse_one(OsStr::from_bytes(b"z\xA0-y\xB0=")), FlagResult::Argument);
-        assert_eq!(parse_one(OsStr::from_bytes(b"z\xA0-y\xB0=x\xC0")), FlagResult::Argument);
+        assert_eq!(
+            parse_one(OsStr::from_bytes(b"=x\xC0")),
+            FlagResult::Argument
+        );
+        assert_eq!(
+            parse_one(OsStr::from_bytes(b"z\xA0=")),
+            FlagResult::Argument
+        );
+        assert_eq!(
+            parse_one(OsStr::from_bytes(b"z\xA0=x\xC0")),
+            FlagResult::Argument
+        );
+        assert_eq!(
+            parse_one(OsStr::from_bytes(b"z\xA0-y\xB0=")),
+            FlagResult::Argument
+        );
+        assert_eq!(
+            parse_one(OsStr::from_bytes(b"z\xA0-y\xB0=x\xC0")),
+            FlagResult::Argument
+        );
 
         assert_eq!(parse_one(OsStr::from_bytes(b"-")), FlagResult::Argument);
-        assert_eq!(parse_one(OsStr::from_bytes(b"-z\xA0")), FlagResult::Flag {
-            num_minuses: 1,
-            name: Cow::from(OsStr::from_bytes(b"z\xA0")),
-            value: None,
-        });
-        assert_eq!(parse_one(OsStr::from_bytes(b"-z\xA0-y\xB0")), FlagResult::Flag {
-            num_minuses: 1,
-            name: Cow::from(OsStr::from_bytes(b"z\xA0-y\xB0")),
-            value: None,
-        });
+        assert_eq!(
+            parse_one(OsStr::from_bytes(b"-z\xA0")),
+            FlagResult::Flag {
+                num_minuses: 1,
+                name: Cow::from(OsStr::from_bytes(b"z\xA0")),
+                value: None,
+            }
+        );
+        assert_eq!(
+            parse_one(OsStr::from_bytes(b"-z\xA0-y\xB0")),
+            FlagResult::Flag {
+                num_minuses: 1,
+                name: Cow::from(OsStr::from_bytes(b"z\xA0-y\xB0")),
+                value: None,
+            }
+        );
         assert_eq!(parse_one(OsStr::from_bytes(b"-=")), FlagResult::BadFlag);
-        assert_eq!(parse_one(OsStr::from_bytes(b"-=x\xC0")), FlagResult::BadFlag);
-        assert_eq!(parse_one(OsStr::from_bytes(b"-z\xA0=")), FlagResult::Flag {
-            num_minuses: 1,
-            name: Cow::from(OsStr::from_bytes(b"z\xA0")),
-            value: Some(Cow::from(OsStr::from_bytes(b"")))
-        });
-        assert_eq!(parse_one(OsStr::from_bytes(b"-z\xA0=x\xC0")), FlagResult::Flag {
-            num_minuses: 1,
-            name: Cow::from(OsStr::from_bytes(b"z\xA0")),
-            value: Some(Cow::from(OsStr::from_bytes(b"x\xC0")))
-        });
-        assert_eq!(parse_one(OsStr::from_bytes(b"-z\xA0-y\xB0=")), FlagResult::Flag {
-            num_minuses: 1,
-            name: Cow::from(OsStr::from_bytes(b"z\xA0-y\xB0")),
-            value: Some(Cow::from(OsStr::from_bytes(b"")))
-        });
-        assert_eq!(parse_one(OsStr::from_bytes(b"-z\xA0-y\xB0=x\xC0")), FlagResult::Flag {
-            num_minuses: 1,
-            name: Cow::from(OsStr::from_bytes(b"z\xA0-y\xB0")),
-            value: Some(Cow::from(OsStr::from_bytes(b"x\xC0")))
-        });
+        assert_eq!(
+            parse_one(OsStr::from_bytes(b"-=x\xC0")),
+            FlagResult::BadFlag
+        );
+        assert_eq!(
+            parse_one(OsStr::from_bytes(b"-z\xA0=")),
+            FlagResult::Flag {
+                num_minuses: 1,
+                name: Cow::from(OsStr::from_bytes(b"z\xA0")),
+                value: Some(Cow::from(OsStr::from_bytes(b"")))
+            }
+        );
+        assert_eq!(
+            parse_one(OsStr::from_bytes(b"-z\xA0=x\xC0")),
+            FlagResult::Flag {
+                num_minuses: 1,
+                name: Cow::from(OsStr::from_bytes(b"z\xA0")),
+                value: Some(Cow::from(OsStr::from_bytes(b"x\xC0")))
+            }
+        );
+        assert_eq!(
+            parse_one(OsStr::from_bytes(b"-z\xA0-y\xB0=")),
+            FlagResult::Flag {
+                num_minuses: 1,
+                name: Cow::from(OsStr::from_bytes(b"z\xA0-y\xB0")),
+                value: Some(Cow::from(OsStr::from_bytes(b"")))
+            }
+        );
+        assert_eq!(
+            parse_one(OsStr::from_bytes(b"-z\xA0-y\xB0=x\xC0")),
+            FlagResult::Flag {
+                num_minuses: 1,
+                name: Cow::from(OsStr::from_bytes(b"z\xA0-y\xB0")),
+                value: Some(Cow::from(OsStr::from_bytes(b"x\xC0")))
+            }
+        );
 
         assert_eq!(parse_one(OsStr::from_bytes(b"--")), FlagResult::EndFlags);
-        assert_eq!(parse_one(OsStr::from_bytes(b"--z\xA0")), FlagResult::Flag {
-            num_minuses: 2,
-            name: Cow::from(OsStr::from_bytes(b"z\xA0")),
-            value: None,
-        });
-        assert_eq!(parse_one(OsStr::from_bytes(b"--z\xA0-y\xB0")), FlagResult::Flag {
-            num_minuses: 2,
-            name: Cow::from(OsStr::from_bytes(b"z\xA0-y\xB0")),
-            value: None,
-        });
+        assert_eq!(
+            parse_one(OsStr::from_bytes(b"--z\xA0")),
+            FlagResult::Flag {
+                num_minuses: 2,
+                name: Cow::from(OsStr::from_bytes(b"z\xA0")),
+                value: None,
+            }
+        );
+        assert_eq!(
+            parse_one(OsStr::from_bytes(b"--z\xA0-y\xB0")),
+            FlagResult::Flag {
+                num_minuses: 2,
+                name: Cow::from(OsStr::from_bytes(b"z\xA0-y\xB0")),
+                value: None,
+            }
+        );
         assert_eq!(parse_one(OsStr::from_bytes(b"--=")), FlagResult::BadFlag);
-        assert_eq!(parse_one(OsStr::from_bytes(b"--=x\xC0")), FlagResult::BadFlag);
-        assert_eq!(parse_one(OsStr::from_bytes(b"--z\xA0=")), FlagResult::Flag {
-            num_minuses: 2,
-            name: Cow::from(OsStr::from_bytes(b"z\xA0")),
-            value: Some(Cow::from(OsStr::from_bytes(b"")))
-        });
-        assert_eq!(parse_one(OsStr::from_bytes(b"--z\xA0=x\xC0")), FlagResult::Flag {
-            num_minuses: 2,
-            name: Cow::from(OsStr::from_bytes(b"z\xA0")),
-            value: Some(Cow::from(OsStr::from_bytes(b"x\xC0")))
-        });
-        assert_eq!(parse_one(OsStr::from_bytes(b"--z\xA0-y\xB0=")), FlagResult::Flag {
-            num_minuses: 2,
-            name: Cow::from(OsStr::from_bytes(b"z\xA0-y\xB0")),
-            value: Some(Cow::from(OsStr::from_bytes(b"")))
-        });
-        assert_eq!(parse_one(OsStr::from_bytes(b"--z\xA0-y\xB0=x\xC0")), FlagResult::Flag {
-            num_minuses: 2,
-            name: Cow::from(OsStr::from_bytes(b"z\xA0-y\xB0")),
-            value: Some(Cow::from(OsStr::from_bytes(b"x\xC0")))
-        });
+        assert_eq!(
+            parse_one(OsStr::from_bytes(b"--=x\xC0")),
+            FlagResult::BadFlag
+        );
+        assert_eq!(
+            parse_one(OsStr::from_bytes(b"--z\xA0=")),
+            FlagResult::Flag {
+                num_minuses: 2,
+                name: Cow::from(OsStr::from_bytes(b"z\xA0")),
+                value: Some(Cow::from(OsStr::from_bytes(b"")))
+            }
+        );
+        assert_eq!(
+            parse_one(OsStr::from_bytes(b"--z\xA0=x\xC0")),
+            FlagResult::Flag {
+                num_minuses: 2,
+                name: Cow::from(OsStr::from_bytes(b"z\xA0")),
+                value: Some(Cow::from(OsStr::from_bytes(b"x\xC0")))
+            }
+        );
+        assert_eq!(
+            parse_one(OsStr::from_bytes(b"--z\xA0-y\xB0=")),
+            FlagResult::Flag {
+                num_minuses: 2,
+                name: Cow::from(OsStr::from_bytes(b"z\xA0-y\xB0")),
+                value: Some(Cow::from(OsStr::from_bytes(b"")))
+            }
+        );
+        assert_eq!(
+            parse_one(OsStr::from_bytes(b"--z\xA0-y\xB0=x\xC0")),
+            FlagResult::Flag {
+                num_minuses: 2,
+                name: Cow::from(OsStr::from_bytes(b"z\xA0-y\xB0")),
+                value: Some(Cow::from(OsStr::from_bytes(b"x\xC0")))
+            }
+        );
 
         assert_eq!(parse_one(OsStr::from_bytes(b"---")), FlagResult::BadFlag);
-        assert_eq!(parse_one(OsStr::from_bytes(b"---z\xA0")), FlagResult::BadFlag);
-        assert_eq!(parse_one(OsStr::from_bytes(b"---z\xA0-y\xB0")), FlagResult::BadFlag);
+        assert_eq!(
+            parse_one(OsStr::from_bytes(b"---z\xA0")),
+            FlagResult::BadFlag
+        );
+        assert_eq!(
+            parse_one(OsStr::from_bytes(b"---z\xA0-y\xB0")),
+            FlagResult::BadFlag
+        );
         assert_eq!(parse_one(OsStr::from_bytes(b"---=")), FlagResult::BadFlag);
-        assert_eq!(parse_one(OsStr::from_bytes(b"---=x\xC0")), FlagResult::BadFlag);
-        assert_eq!(parse_one(OsStr::from_bytes(b"---z\xA0=")), FlagResult::BadFlag);
-        assert_eq!(parse_one(OsStr::from_bytes(b"---z\xA0=x\xC0")), FlagResult::BadFlag);
-        assert_eq!(parse_one(OsStr::from_bytes(b"---z\xA0-y\xB0=")), FlagResult::BadFlag);
-        assert_eq!(parse_one(OsStr::from_bytes(b"---z\xA0-y\xB0=x\xC0")), FlagResult::BadFlag);
+        assert_eq!(
+            parse_one(OsStr::from_bytes(b"---=x\xC0")),
+            FlagResult::BadFlag
+        );
+        assert_eq!(
+            parse_one(OsStr::from_bytes(b"---z\xA0=")),
+            FlagResult::BadFlag
+        );
+        assert_eq!(
+            parse_one(OsStr::from_bytes(b"---z\xA0=x\xC0")),
+            FlagResult::BadFlag
+        );
+        assert_eq!(
+            parse_one(OsStr::from_bytes(b"---z\xA0-y\xB0=")),
+            FlagResult::BadFlag
+        );
+        assert_eq!(
+            parse_one(OsStr::from_bytes(b"---z\xA0-y\xB0=x\xC0")),
+            FlagResult::BadFlag
+        );
     }
 }

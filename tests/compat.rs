@@ -9,41 +9,29 @@ fn test_noflags() -> io::Result<()> {
         assert!(output.status.success());
         assert_eq!(output.stdout, b"");
 
-        let output = Command::new(command)
-            .args(&["foo", "bar", "-f"])
-            .output()?;
+        let output = Command::new(command).args(&["foo", "bar", "-f"]).output()?;
         assert!(output.status.success());
         assert_eq!(output.stdout, b"foo\nbar\n-f\n");
 
-        let output = Command::new(command)
-            .args(&["--", "-f", "foo"])
-            .output()?;
+        let output = Command::new(command).args(&["--", "-f", "foo"]).output()?;
         assert!(output.status.success());
         assert_eq!(output.stdout, b"-f\nfoo\n");
 
-        let output = Command::new(command)
-            .args(&["-", "foo"])
-            .output()?;
+        let output = Command::new(command).args(&["-", "foo"]).output()?;
         assert!(output.status.success());
         assert_eq!(output.stdout, b"-\nfoo\n");
 
-        let output = Command::new(command)
-            .args(&["-f", "foo"])
-            .output()?;
+        let output = Command::new(command).args(&["-f", "foo"]).output()?;
         assert!(!output.status.success());
         let stderr = String::from_utf8_lossy(&output.stderr);
         assert!(stderr.contains("flag provided but not defined"));
 
-        let output = Command::new(command)
-            .args(&["--f", "foo"])
-            .output()?;
+        let output = Command::new(command).args(&["--f", "foo"]).output()?;
         assert!(!output.status.success());
         let stderr = String::from_utf8_lossy(&output.stderr);
         assert!(stderr.contains("flag provided but not defined"));
 
-        let output = Command::new(command)
-            .args(&["---f", "foo"])
-            .output()?;
+        let output = Command::new(command).args(&["---f", "foo"]).output()?;
         assert!(!output.status.success());
         let stderr = String::from_utf8_lossy(&output.stderr);
         assert!(stderr.contains("bad flag syntax"));
