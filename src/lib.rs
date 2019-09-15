@@ -5,7 +5,7 @@ use std::ffi::OsStr;
 use std::fmt;
 
 pub use error::{FlagError, FlagParseError, FlagWarning};
-pub use flag_value::FlagValue;
+pub use flag_value::{FlagSetter, FlagValue};
 
 mod error;
 mod flag_value;
@@ -22,7 +22,7 @@ impl<'a> FlagSet<'a> {
         }
     }
 
-    pub fn add_flag(&mut self, name: &'a str, value: &'a mut dyn FlagValue) {
+    pub fn add_flag(&mut self, name: &'a str, value: &'a mut dyn FlagSetter) {
         let value = FlagSpec { r: value };
         let old = self.flag_specs.insert(name, value);
         if old.is_some() {
@@ -246,20 +246,20 @@ cfg_if! {
 }
 
 struct FlagSpec<'a> {
-    r: &'a mut dyn FlagValue,
+    r: &'a mut dyn FlagSetter,
 }
 
 impl<'a> fmt::Debug for FlagSpec<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        struct FlagValuePlaceholder<'a>(&'a dyn FlagValue);
-        impl<'a> fmt::Debug for FlagValuePlaceholder<'a> {
+        struct FlagSetterPlaceholder<'a>(&'a dyn FlagSetter);
+        impl<'a> fmt::Debug for FlagSetterPlaceholder<'a> {
             fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
                 write!(f, "<mutable reference {:p}>", self.0)
             }
         }
 
         f.debug_struct("FlagSpec")
-            .field("r", &FlagValuePlaceholder(self.r))
+            .field("r", &FlagSetterPlaceholder(self.r))
             .finish()
     }
 }
