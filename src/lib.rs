@@ -30,21 +30,31 @@ impl<'a> FlagSet<'a> {
         }
     }
 
-    pub fn parse<'b, S: AsRef<OsStr>>(&mut self, args: &'b [S]) -> Result<&'b [S], FlagError> {
+    pub fn parse<'b, T: FlagValue, S: AsRef<OsStr>>(
+        &mut self,
+        args: &'b [S],
+    ) -> Result<Vec<T>, FlagError> {
         self.parse_with_warnings(args, None)
     }
 
-    pub fn parse_with_warnings<'b, S: AsRef<OsStr>>(
+    pub fn parse_with_warnings<'b, T: FlagValue, S: AsRef<OsStr>>(
         &mut self,
         mut args: &'b [S],
         mut warnings: Option<&mut Vec<FlagWarning>>,
-    ) -> Result<&'b [S], FlagError> {
+    ) -> Result<Vec<T>, FlagError> {
         loop {
             let seen = self.process_one(&mut args, reborrow_option_mut(&mut warnings))?;
             if !seen {
                 break;
             }
         }
+        let args = args
+            .iter()
+            .map(|x| {
+                T::parse(Some(x.as_ref()), reborrow_option_mut(&mut warnings))
+                    .map_err(|error| FlagError::ParseError { error })
+            })
+            .collect::<Result<Vec<_>, _>>()?;
         Ok(args)
     }
 
@@ -285,13 +295,6 @@ where
     let mut flag_set = FlagSet::new();
     f(&mut flag_set);
     let remain = flag_set.parse_with_warnings(args, reborrow_option_mut(&mut warnings))?;
-    let remain = remain
-        .iter()
-        .map(|x| {
-            T::parse(Some(x.as_ref()), reborrow_option_mut(&mut warnings))
-                .map_err(|error| FlagError::ParseError { error })
-        })
-        .collect::<Result<Vec<_>, _>>()?;
     Ok(remain)
 }
 
