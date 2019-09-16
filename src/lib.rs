@@ -267,7 +267,7 @@ impl<'a> fmt::Debug for FlagSpec<'a> {
 
 pub fn parse_args<'a, T, S: AsRef<OsStr>, F>(args: &[S], f: F) -> Result<Vec<T>, FlagError>
 where
-    T: FlagValue + Default,
+    T: FlagValue,
     F: FnOnce(&mut FlagSet<'a>),
 {
     parse_args_with_warnings(args, None, f)
@@ -279,7 +279,7 @@ pub fn parse_args_with_warnings<'a, T, S: AsRef<OsStr>, F>(
     f: F,
 ) -> Result<Vec<T>, FlagError>
 where
-    T: FlagValue + Default,
+    T: FlagValue,
     F: FnOnce(&mut FlagSet<'a>),
 {
     let mut flag_set = FlagSet::new();
@@ -288,10 +288,8 @@ where
     let remain = remain
         .iter()
         .map(|x| {
-            let mut val = T::default();
-            val.set(Some(x.as_ref()), reborrow_option_mut(&mut warnings))
-                .map_err(|error| FlagError::ParseError { error })?;
-            Ok(val)
+            T::parse(Some(x.as_ref()), reborrow_option_mut(&mut warnings))
+                .map_err(|error| FlagError::ParseError { error })
         })
         .collect::<Result<Vec<_>, _>>()?;
     Ok(remain)
@@ -299,7 +297,7 @@ where
 
 pub fn parse<'a, T, F>(f: F) -> Vec<T>
 where
-    T: FlagValue + Default,
+    T: FlagValue,
     F: FnOnce(&mut FlagSet<'a>),
 {
     parse_with_warnings(WarningMode::Report, f)
@@ -307,7 +305,7 @@ where
 
 pub fn parse_with_warnings<'a, T, F>(mode: WarningMode, f: F) -> Vec<T>
 where
-    T: FlagValue + Default,
+    T: FlagValue,
     F: FnOnce(&mut FlagSet<'a>),
 {
     let mut warnings = if mode == WarningMode::Ignore {
