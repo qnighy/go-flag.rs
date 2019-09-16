@@ -113,7 +113,7 @@ impl<'a> FlagSet<'a> {
             .r
             .set(value, reborrow_option_mut(&mut warnings))
             .map_err(|error| FlagError::ParseError { error })?;
-        Ok(false)
+        Ok(true)
     }
 }
 
@@ -357,6 +357,7 @@ mod tests {
         };
         assert_eq!(parse(&[]).unwrap(), (false, 10, vec![]));
         assert_eq!(parse(&["-f"]).unwrap(), (true, 10, vec![]));
+        assert_eq!(parse(&["-f", "--lines=20"]).unwrap(), (true, 20, vec![]));
     }
 
     #[test]

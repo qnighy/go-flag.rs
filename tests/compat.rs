@@ -50,6 +50,10 @@ fn test_someflags() -> io::Result<()> {
         let output = Command::new(command).args(&["-f"]).output()?;
         assert!(output.status.success());
         assert_eq!(output.stdout(), "force = true\nlines = 10\n");
+
+        let output = Command::new(command).args(&["-f", "--lines=20"]).output()?;
+        assert!(output.status.success());
+        assert_eq!(output.stdout(), "force = true\nlines = 20\n");
     }
 
     Ok(())
