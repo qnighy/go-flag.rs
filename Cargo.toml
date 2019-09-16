@@ -9,7 +9,7 @@ repository = "https://github.com/qnighy/go-flag.rs"
 readme = "README.md"
 keywords = ["cli", "parser", "golang"]
 categories = ["command-line-interface", "parser-implementations"]
-license = "MIT or Apache-2.0"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 cfg-if = "0.1.9"
