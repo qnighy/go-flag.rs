@@ -4,7 +4,16 @@ version = "0.1.0"
 authors = ["Masaki Hara <ackie.h.gmai@gmail.com>"]
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "Command line parser library, made to be compatible with Go's flag"
+repository = "https://github.com/qnighy/go-flag.rs"
+readme = "README.md"
+keywords = ["cli", "parser", "golang"]
+categories = ["command-line-interface", "parser-implementations"]
+license = "MIT or Apache-2.0"
 
 [dependencies]
 cfg-if = "0.1.9"
+
+[badges]
+is-it-maintained-issue-resolution = { repository = "qnighy/go-flag.rs" }
+is-it-maintained-open-issues = { repository = "qnighy/go-flag.rs" }
