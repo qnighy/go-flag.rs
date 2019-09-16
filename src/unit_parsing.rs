@@ -29,7 +29,7 @@ pub(crate) fn parse_one(s: &OsStr) -> FlagResult<'_> {
         // `--` terminates flags.
         return FlagResult::EndFlags;
     }
-    let (num_minuses, nv) = if s.len() >= 2 && s.starts_with("--") {
+    let (num_minuses, nv) = if s.starts_with("--") {
         (2, &s[2..])
     } else {
         (1, &s[1..])
@@ -55,24 +55,24 @@ cfg_if! {
         fn parse_one_fallback(s: &OsStr) -> FlagResult<'_> {
             use std::os::unix::ffi::OsStrExt;
 
-            let sb = s.as_bytes();
-            if sb.len() < 2 || sb[0] != b'-' {
+            let s = s.as_bytes();
+            if s.len() < 2 || !s.starts_with(b"-") {
                 // Empty string, `-` and something other than `/-.*/` is a non-flag.
                 return FlagResult::Argument;
             }
-            if sb == b"--" {
+            if s == b"--" {
                 // `--` terminates flags.
                 return FlagResult::EndFlags;
             }
-            let (num_minuses, nv) = if sb.len() >= 2 && &sb[..2] == b"--" {
-                (2, &sb[2..])
+            let (num_minuses, nv) = if s.starts_with(b"--") {
+                (2, &s[2..])
             } else {
-                (1, &sb[1..])
+                (1, &s[1..])
             };
-            if nv.len() == 0 || nv[0] == b'-' || nv[0] == b'=' {
+            if nv.len() == 0 || nv.starts_with(b"-") || nv.starts_with(b"=") {
                 return FlagResult::BadFlag;
             }
-            let equal_pos = nv.iter().position(|&c| c == b'=');
+            let equal_pos = nv.find(b'=');
             let (name, value) = if let Some(equal_pos) = equal_pos {
                 (&nv[..equal_pos], Some(&nv[equal_pos + 1..]))
             } else {
@@ -120,6 +120,33 @@ cfg_if! {
         }
     } else {
         compile_error!("TODO: implement for cfg(not(any(unix, target_os = \"redox\", windows))) case");
+    }
+}
+
+#[allow(unused)]
+trait BytesExt {
+    type Unit;
+    fn starts_with(&self, s: &Self) -> bool;
+    fn find(&self, ch: Self::Unit) -> Option<usize>;
+}
+
+impl BytesExt for [u8] {
+    type Unit = u8;
+    fn starts_with(&self, s: &Self) -> bool {
+        self.len() >= s.len() && &self[..s.len()] == s
+    }
+    fn find(&self, ch: Self::Unit) -> Option<usize> {
+        self.iter().position(|&c| c == ch)
+    }
+}
+
+impl BytesExt for [u16] {
+    type Unit = u16;
+    fn starts_with(&self, s: &Self) -> bool {
+        self.len() >= s.len() && &self[..s.len()] == s
+    }
+    fn find(&self, ch: Self::Unit) -> Option<usize> {
+        self.iter().position(|&c| c == ch)
     }
 }
 
