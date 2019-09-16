@@ -4,8 +4,16 @@ use std::path::PathBuf;
 
 use crate::error::{FlagParseError, FlagWarning};
 
+/// Places that can store parsed values.
+///
+/// All implementors of `FlagValue` implement this.
 pub trait FlagSetter {
+    /// Indicates whether the flag is a boolean flag. Similar to `FlagValue::is_bool_flag`.
+    ///
+    /// For most types, this is `false`.
     fn is_bool_flag(&self) -> bool;
+
+    /// Parse a flag argument and store the result.
     fn set(
         &mut self,
         value: Option<&OsStr>,
@@ -27,10 +35,97 @@ impl<T: FlagValue> FlagSetter for T {
     }
 }
 
+/// Values that can be parsed from a string.
+///
+/// This is similar to `FromStr`, but different in the following ways:
+///
+/// - A source string can be `None`, indicating a boolean flag with no argument.
+/// - A source string is given as `&OsStr`.
+/// - The behavior is meant to be compatible with Go's `strconv` by default.
+///
+/// ## Common Formats
+///
+/// ### Boolean
+///
+/// `bool`
+///
+/// - It can accept a boolean flag: `-f` instead of `-f=true`.
+/// - `0`, `f`, `F`, `false`, `False`, and `FALSE` are considered false.
+/// - `1`, `t`, `T`, `true`, `True`, and `TRUE` are considered true.
+/// - Other values are treated as invalid.
+///
+/// Warnings:
+///
+/// - `0`, `1`, `f`, `t`, `F`, `T`, `False`, `True`, `FALSE`, and `TRUE` are considered incompatible.
+///
+/// ### Unsigned integer
+///
+/// `u8`, `u16`, `u32`, `u64`, `u128`, `usize`
+///
+/// - Sign (`-` or `+`) is not allowed.
+/// - It may have an optional radix prefix: `0x`, `0o`, `0`, or `0b`. It's case-insensitive.
+/// - Unless it's `0`, it must have at least one digit, except the radix prefix.
+/// - It may have optional underscores between the radix prefix and a digit or between digits.
+///   Underscores can't be consecutive.
+///
+/// Warnings:
+///
+/// - radix prefixes, including `0`, are considered incompatible.
+///   - Exception: values from 0 to 7 are unambiguous, so considered compatible.
+/// - underscores are considered incompatible.
+///
+/// ### Signed integer
+///
+/// `i8`, `i16`, `i32`, `i64`, `i128`, `isize`
+///
+/// - Sign (`-` or `+`) is allowed at the beginning of the string.
+/// - Otherwise same as unsigned integers.
+///
+/// Warnings:
+///
+/// - radix prefixes, including `0`, are considered incompatible.
+///   - Exception: values from -7 to 7 are unambiguous, so considered compatible.
+/// - underscores are considered incompatible.
+///
+/// ### Floating point number
+///
+/// `f32`, `f64`
+///
+/// Not yet implemented
+///
+/// ### UTF-8 String
+///
+/// `String`
+///
+/// - Any UTF-8 strings are allowed on unix-like platforms.
+/// - Any UTF-16 strings are allowed on Windows.
+///
+/// No warning is defined.
+///
+/// ### OS-defined String
+///
+/// `OsString`, `PathBuf`
+///
+/// - Anything is allowed.
+///
+/// No warning is defined.
 pub trait FlagValue: Sized {
+    /// Indicates whether the flag is a boolean flag.
+    ///
+    /// For most types, this is `false`.
     fn is_bool_flag() -> bool {
         false
     }
+
+    /// Parses the flag argument.
+    ///
+    /// ## Errors
+    ///
+    /// It may return `Err` when the value is an invalid string for the type.
+    ///
+    /// ## Panics
+    ///
+    /// It may panic if `is_bool_flag()` is `false` and `value` is `None`.
     fn parse(
         value: Option<&OsStr>,
         warnings: Option<&mut Vec<FlagWarning>>,

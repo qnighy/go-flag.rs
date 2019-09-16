@@ -1,10 +1,15 @@
 use std::fmt;
 
+/// Common errors for flag parsing.
 #[derive(Debug)]
 pub enum FlagError {
+    /// Bad flag syntax. E.g. `--=foo`
     BadFlag { flag: String },
+    /// Flag provided but not defined.
     UnknownFlag { name: String },
+    /// Flag needs an argument.
     ArgumentNeeded { name: String },
+    /// Failed to parse a flag argument. E.g. `--lines=10XYZ`
     ParseError { error: FlagParseError },
 }
 
@@ -42,11 +47,16 @@ impl std::error::Error for FlagError {
     }
 }
 
+/// Common warnings for flag parsing.
 #[derive(Debug)]
 pub enum FlagWarning {
+    /// Flag-like syntax appearing after argument.
     FlagAfterArg { flag: String },
+    /// Long flag with single minus. E.g. `-lines`
     ShortLong { flag: String },
+    /// Short flag with double minus. E.g. `--f`
     LongShort { flag: String },
+    /// Nonstandard value format for flag argument. E.g. `--lines=0x10`
     FlagValue { value: String },
 }
 
@@ -76,10 +86,14 @@ impl std::error::Error for FlagWarning {
     }
 }
 
+/// Common errors for flag argument parsing.
 #[derive(Debug)]
 pub enum FlagParseError {
+    /// Invalid bool. E.g. `yes`
     BoolParseError,
+    /// Invalid integer. E.g. `100XYZ`
     IntegerParseError,
+    /// Invalid string. Invalid UTF-8 in unix-like platform or invalid UTF-16 in Windows.
     StringParseError,
 }
 
