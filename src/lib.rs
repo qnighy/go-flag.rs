@@ -217,7 +217,7 @@ impl<'a> FlagSet<'a> {
     ///     .parse_with_warnings(&["--f", "foo", "-non-flag"], Some(&mut warnings))?;
     /// assert_eq!(args, vec![String::from("foo"), String::from("-non-flag")]);
     /// assert_eq!(warnings[0].to_string(), "short flag with double minuses: --f");
-    /// // assert_eq!(warnings[1].to_string(), "flag-like syntax appearing after argument: -non-flag");
+    /// assert_eq!(warnings[1].to_string(), "flag-like syntax appearing after argument: -non-flag");
     /// # Ok(())
     /// # }
     /// ```
@@ -252,7 +252,23 @@ impl<'a> FlagSet<'a> {
         }
         let arg0: &OsStr = args[0].as_ref();
         let (num_minuses, name, value) = match parse_one(arg0) {
-            FlagResult::Argument => return Ok(false),
+            FlagResult::Argument => {
+                if let Some(warnings) = reborrow_option_mut(&mut warnings) {
+                    for arg in args.iter() {
+                        let arg = arg.as_ref();
+                        let flag_like = match parse_one(arg) {
+                            FlagResult::Argument | FlagResult::EndFlags => false,
+                            FlagResult::BadFlag | FlagResult::Flag { .. } => true,
+                        };
+                        if flag_like {
+                            warnings.push(FlagWarning::FlagAfterArg {
+                                flag: arg.to_string_lossy().into_owned(),
+                            });
+                        }
+                    }
+                }
+                return Ok(false);
+            }
             FlagResult::EndFlags => {
                 *args = &args[1..];
                 return Ok(false);
