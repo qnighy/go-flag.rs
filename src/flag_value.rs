@@ -362,10 +362,7 @@ mod tests {
 
         assert_eq!(parse("0").unwrap(), 0);
         assert_eq!(parse("789").unwrap(), 789);
-        assert_eq!(
-            parse("12_345_6789").unwrap(),
-            123456789
-        );
+        assert_eq!(parse("12_345_6789").unwrap(), 123456789);
         assert_eq!(parse("0xABc").unwrap(), 0xABC);
         assert_eq!(parse("0XABc").unwrap(), 0xABC);
         assert_eq!(parse("0o567").unwrap(), 0o567);
@@ -376,14 +373,8 @@ mod tests {
         assert_eq!(parse("0o_567").unwrap(), 0o567);
         assert_eq!(parse("0b_111").unwrap(), 0b111);
         assert_eq!(parse("0_567").unwrap(), 0o567);
-        assert_eq!(
-            parse("4294967295").unwrap(),
-            4294967295
-        );
-        assert_eq!(
-            parse("0x00000000FFFFFFFF").unwrap(),
-            0xFFFFFFFF
-        );
+        assert_eq!(parse("4294967295").unwrap(), 4294967295);
+        assert_eq!(parse("0x00000000FFFFFFFF").unwrap(), 0xFFFFFFFF);
 
         assert!(parse("").is_err());
         assert!(parse("-").is_err());
