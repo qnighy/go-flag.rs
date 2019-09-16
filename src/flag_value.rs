@@ -115,15 +115,21 @@ macro_rules! gen_int_impls {
             impl FlagValue for $ty {
                 fn parse(
                     value: Option<&OsStr>,
-                    _warnings: Option<&mut Vec<FlagWarning>>,
+                    warnings: Option<&mut Vec<FlagWarning>>,
                 ) -> Result<Self, FlagParseError> {
-                    let value = value
+                    let s = value
                         .unwrap()
                         .to_str()
                         .ok_or_else(|| FlagParseError::IntegerParseError)?;
-                    let (value, radix) = cleanup_int(value, $allow_sign)?;
-                    Self::from_str_radix(&value, radix)
-                        .map_err(|_| FlagParseError::IntegerParseError)
+                    let (value, radix) = cleanup_int(s, $allow_sign)?;
+                    let value = Self::from_str_radix(&value, radix)
+                        .map_err(|_| FlagParseError::IntegerParseError)?;
+                    if let Some(warnings) = warnings {
+                        if s.parse::<Self>().map(|x| value != x).unwrap_or(true) {
+                            warnings.push(FlagWarning::FlagValue { value: s.to_owned() });
+                        }
+                    }
+                    Ok(value)
                 }
             }
         )*
