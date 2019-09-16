@@ -89,24 +89,24 @@ cfg_if! {
             use std::ffi::OsString;
             use std::os::windows::ffi::{OsStrExt, OsStringExt};
 
-            let sb = s.encode_wide().collect::<Vec<_>>();
-            if sb.len() < 2 || sb[0] != b'-' as u16 {
+            let s = s.encode_wide().collect::<Vec<_>>();
+            if s.len() < 2 || !s.starts_with(&[b'-' as u16]) {
                 // Empty string, `-` and something other than `/-.*/` is a non-flag.
                 return FlagResult::Argument;
             }
-            if sb == [b'-' as u16, b'-' as u16] {
+            if s == [b'-' as u16, b'-' as u16] {
                 // `--` terminates flags.
                 return FlagResult::EndFlags;
             }
-            let (num_minuses, nv) = if sb.len() >= 2 && &sb[..2] == [b'-' as u16, b'-' as u16] {
-                (2, &sb[2..])
+            let (num_minuses, nv) = if s.starts_with(&[b'-' as u16, b'-' as u16]) {
+                (2, &s[2..])
             } else {
-                (1, &sb[1..])
+                (1, &s[1..])
             };
-            if nv.len() == 0 || nv[0] == b'-' as u16 || nv[0] == b'=' as u16 {
+            if nv.len() == 0 || nv.starts_with(&[b'-' as u16]) || nv.starts_with(&[b'=' as u16]) {
                 return FlagResult::BadFlag;
             }
-            let equal_pos = nv.iter().position(|&c| c == b'=' as u16);
+            let equal_pos = nv.find(b'=' as u16);
             let (name, value) = if let Some(equal_pos) = equal_pos {
                 (&nv[..equal_pos], Some(&nv[equal_pos + 1..]))
             } else {
